@@ -242,5 +242,98 @@ namespace Fluentx.Tests
 
             Assert.AreEqual(condition_evaluation_count, 100);
         }
+
+        [TestMethod]
+        public void DoWhileTest()
+        {
+            int result = 0;
+
+            Flux.Do(() =>
+            {
+                ++result;
+            }).While(() => { return result < 5; });
+
+            Assert.AreEqual(result, 5);
+        }
+
+        [TestMethod]
+        public void LateLoopLateBreakOnTest()
+        {
+            int result = 0;
+            int condition_evaluation_count = 0;
+
+            Flux.Do(() =>
+            {
+                result += 1;
+            })
+                .LateBreakOn(() => result == 4)
+                .While(() =>
+                {
+                    condition_evaluation_count += 1;
+                    return result < 6;
+                });
+
+            Assert.AreEqual(condition_evaluation_count, 3);
+        }
+
+        [TestMethod]
+        public void LateLoopEarlyBreakOnTest()
+        {
+            int result = 0;
+            int condition_evaluation_count = 0;
+
+            Flux.Do(() =>
+            {
+                result += 1;
+            })
+                .EarlyBreakOn(() => result == 4)
+                .While(() =>
+                {
+                    condition_evaluation_count += 1;
+                    return result < 6;
+                });
+
+            Assert.AreEqual(condition_evaluation_count, 4);
+        }
+
+        [TestMethod]
+        public void LateLoopLateContinueOnTest()
+        {
+            int result = 0;
+            int condition_evaluation_count = 0;
+
+            Flux.Do(() =>
+            {
+                result += 1;
+            })
+                .LateContinueOn(() => result == 4)
+                .While(() =>
+                {
+                    condition_evaluation_count += 1;
+                    return result < 6;
+                });
+
+            Assert.AreEqual(condition_evaluation_count, 6);
+        }
+
+        [TestMethod]
+        public void LateLoopEarlyContinueOnTest()
+        {
+            int result = 0;
+            int condition_evaluation_count = 0;
+
+            Flux.Do(() =>
+            {
+                result += 1;
+            })
+                .EarlyContinueOn(() => result == 4)
+                .While(() =>
+                {
+                    condition_evaluation_count += 1;
+                    return result < 6 && condition_evaluation_count < 100;
+                });
+
+            Assert.AreEqual(condition_evaluation_count, 100);
+        }
     }
 }

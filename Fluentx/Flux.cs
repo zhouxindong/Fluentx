@@ -5,7 +5,7 @@ namespace Fluentx
     /// <summary>
     /// Flux is the main class for Fluentx and its a shortened name for Fluentx
     /// </summary>
-    public class Flux : IConditionBuilder, IConditionalAction, ILoopAction, IEarlyLoop, IEarlyLoopBuilder
+    public class Flux : IConditionBuilder, IConditionalAction, ILoopAction, IEarlyLoop, IEarlyLoopBuilder, ILateLoop, ILateLoopBuilder
     {
         private Flux()
         {
@@ -31,6 +31,10 @@ namespace Fluentx
         private LoopStopers LoopStoper { get; set; }
         private bool LoopStoperCondition { get; set; }
 
+        /// <summary>
+        /// Used for a single default action
+        /// </summary>
+        private Action Action { get; set; }
 
         #region conditional
 
@@ -383,6 +387,7 @@ namespace Fluentx
 
         /// <summary>
         /// Evaluates the specified condition to be used to continue the looping statment lately (before the end of the loop).
+        /// While-Do-LateContinueOn
         /// </summary>
         /// <param name="condition"></param>
         /// <returns></returns>
@@ -396,10 +401,156 @@ namespace Fluentx
 
         /// <summary>
         /// Evaluates the specified condition to be used to continue the looping statment early (at the begining of the loop).
+        /// While-EarlyContinueOn-Do
         /// </summary>
         /// <param name="condition"></param>
         /// <returns></returns>
         IEarlyLoop IEarlyLoopBuilder.EarlyContinueOn(Func<bool> condition)
+        {
+            LoopStoperConditionalAction = condition;
+            LoopStoperLocation = LoopStoperLocations.BeginingOfTheLoop;
+            LoopStoper = LoopStopers.Continue;
+            return this;
+        }
+
+        /// <summary>
+        /// Prepare for the excution of a Do-While statement using the specified condition, this requires the call to While eventually.
+        /// </summary>
+        /// <param name="action"></param>
+        /// <returns></returns>
+        public static ILateLoopBuilder Do(Action action)
+        {
+            var instance = new Flux { Action = action };
+            return instance;
+        }
+
+        /// <summary>
+        /// Performs the while statement using the specified condition statement after evaluating the previous Do statement.
+        /// </summary>
+        /// <param name="condition"></param>
+        /// <returns></returns>
+        ILoopAction ILateLoopBuilder.While(Func<bool> condition)
+        {
+            do
+            {
+                Action();
+            } while (condition());
+            return this;
+        }
+
+        /// <summary>
+        /// Performs the while statement using the specifed condition after it has evaluated the previous chained Do statement.
+        /// </summary>
+        /// <param name="condition"></param>
+        /// <returns></returns>
+        ILoopAction ILateLoop.While(Func<bool> condition)
+        {
+            do
+            {
+                if (LoopStoperLocation == LoopStoperLocations.BeginingOfTheLoop)
+                {
+                    if (LoopStoperConditionalAction != null)
+                    {
+                        if (LoopStoperConditionalAction())
+                        {
+                            if (LoopStoper == LoopStopers.Break)
+                            {
+                                break;
+                            }
+                            continue;
+                        }
+                    }
+                    else
+                    {
+                        if (LoopStoperCondition)
+                        {
+                            if (LoopStoper == LoopStopers.Break)
+                            {
+                                break;
+                            }
+                            continue;
+                        }
+                    }
+                }
+                Action();
+
+                if (LoopStoperLocation == LoopStoperLocations.EndOfTheLoop)
+                {
+                    if (LoopStoperConditionalAction != null)
+                    {
+                        if (LoopStoperConditionalAction())
+                        {
+                            if (LoopStoper == LoopStopers.Break)
+                            {
+                                break;
+                            }
+                            continue;
+                        }
+                    }
+                    else
+                    {
+                        if (LoopStoperCondition)
+                        {
+                            if (LoopStoper == LoopStopers.Break)
+                            {
+                                break;
+                            }
+                            continue;
+                        }
+                    }
+                }
+            } while (condition());
+            return this;
+        }
+
+        /// <summary>
+        /// Evaluates the specified condition to be used to break the looping statment lately (before the end of the loop).
+        /// Do-LateBreakOn-While
+        /// </summary>
+        /// <param name="condition"></param>
+        /// <returns></returns>
+        ILateLoop ILateLoopBuilder.LateBreakOn(Func<bool> condition)
+        {
+            LoopStoperConditionalAction = condition;
+            LoopStoperLocation = LoopStoperLocations.EndOfTheLoop;
+            LoopStoper = LoopStopers.Break;
+            return this;
+        }
+
+        /// <summary>
+        /// Evaluates the specified condition to be used to break the looping statment early (at the begining of the loop).
+        /// EalyBreakOn-Do-While
+        /// </summary>
+        /// <param name="condition"></param>
+        /// <returns></returns>
+        ILateLoop ILateLoopBuilder.EarlyBreakOn(Func<bool> condition)
+        {
+            LoopStoperConditionalAction = condition;
+            LoopStoperLocation = LoopStoperLocations.BeginingOfTheLoop;
+            LoopStoper = LoopStopers.Break;
+            return this;
+        }
+
+        /// <summary>
+        /// Evaluates the specified condition to be used to continue the looping statment lately (before the end of the loop).
+        /// Do-LateContinueDo-While
+        /// </summary>
+        /// <param name="condition"></param>
+        /// <returns></returns>
+        ILateLoop ILateLoopBuilder.LateContinueOn(Func<bool> condition)
+        {
+            LoopStoperConditionalAction = condition;
+            LoopStoperLocation = LoopStoperLocations.EndOfTheLoop;
+            LoopStoper = LoopStopers.Continue;
+            return this;
+        }
+
+        /// <summary>
+        /// Evaluates the specified condition to be used to continue the looping statment early (at the begining of the loop).
+        /// </summary>
+        /// <param name="condition"></param>
+        /// <returns></returns>
+        ILateLoop ILateLoopBuilder.EarlyContinueOn(Func<bool> condition)
         {
             LoopStoperConditionalAction = condition;
             LoopStoperLocation = LoopStoperLocations.BeginingOfTheLoop;
