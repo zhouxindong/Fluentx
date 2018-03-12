@@ -5,8 +5,11 @@ namespace Fluentx
     /// <summary>
     /// Flux is the main class for Fluentx and its a shortened name for Fluentx
     /// </summary>
-    public class Flux : IConditionBuilder, IConditionalAction, ILoopAction, IEarlyLoop, IEarlyLoopBuilder, ILateLoop, ILateLoopBuilder
+    public class Flux : IConditionBuilder, IConditionalAction, ILoopAction, IEarlyLoop, IEarlyLoopBuilder, ILateLoop,
+        ILateLoopBuilder, ITriableAction
     {
+        #region Flux.class
+
         private Flux()
         {
         }
@@ -28,6 +31,7 @@ namespace Fluentx
             Break,
             Continue
         };
+
         private LoopStopers LoopStoper { get; set; }
         private bool LoopStoperCondition { get; set; }
 
@@ -35,6 +39,8 @@ namespace Fluentx
         /// Used for a single default action
         /// </summary>
         private Action Action { get; set; }
+
+        #endregion
 
         #region conditional
 
@@ -274,7 +280,7 @@ namespace Fluentx
         /// <returns></returns>
         public static IEarlyLoopBuilder While(Func<bool> condition)
         {
-            var instance = new Flux { ConditionValue = condition };
+            var instance = new Flux {ConditionValue = condition};
             return instance;
         }
 
@@ -420,7 +426,7 @@ namespace Fluentx
         /// <returns></returns>
         public static ILateLoopBuilder Do(Action action)
         {
-            var instance = new Flux { Action = action };
+            var instance = new Flux {Action = action};
             return instance;
         }
 
@@ -555,6 +561,191 @@ namespace Fluentx
             LoopStoperConditionalAction = condition;
             LoopStoperLocation = LoopStoperLocations.BeginingOfTheLoop;
             LoopStoper = LoopStopers.Continue;
+            return this;
+        }
+
+        #endregion
+
+        #region triable
+
+        /// <summary>
+        /// Prepares for the excution of a Try/Catch action, this requires the call to one of the following actions eventually: Catch, Swallow, SwalloIf.
+        /// </summary>
+        /// <param name="action"></param>
+        /// <returns></returns>
+        public static ITriableAction Try(Action action)
+        {
+            var instance = new Flux { Action = action };
+            return instance;
+        }
+
+        /// <summary>
+        /// Performs the previously chained Try action and swallow any exception that might occur.
+        /// </summary>
+        /// <returns></returns>
+        IAction ITriableAction.Swallow()
+        {
+            try
+            {
+                Action();
+            }
+            catch
+            {
+            }
+            return this;
+        }
+
+        /// <summary>
+        /// Performs the previously chained Try action and swallow only the specified Exception(s).
+        /// </summary>
+        /// <typeparam name="TException1"></typeparam>
+        /// <returns></returns>
+        IAction ITriableAction.SwallowIf<TException1>()
+        {
+            try
+            {
+                Action();
+            }
+            catch (TException1)
+            {
+            }
+            return this;
+        }
+
+        /// <summary>
+        /// Performs the previously chained Try action and swallow only the specified Exception(s).
+        /// </summary>
+        /// <typeparam name="TException1"></typeparam>
+        /// <typeparam name="TException2"></typeparam>
+        /// <returns></returns>
+        IAction ITriableAction.SwallowIf<TException1, TException2>()
+        {
+            try
+            {
+                Action();
+            }
+            catch (TException1)
+            {
+            }
+            catch (TException2)
+            {
+            }
+            return this;
+        }
+
+        /// <summary>
+        /// Performs the previously chained Try action and swallow only the specified Exception(s).
+        /// </summary>
+        /// <typeparam name="TException1"></typeparam>
+        /// <typeparam name="TException2"></typeparam>
+        /// <typeparam name="TException3"></typeparam>
+        /// <returns></returns>
+        IAction ITriableAction.SwallowIf<TException1, TException2, TException3>()
+        {
+            try
+            {
+                Action();
+            }
+            catch (TException1)
+            {
+            }
+            catch (TException2)
+            {
+            }
+            catch (TException3)
+            {
+            }
+            return this;
+        }
+
+        /// <summary>
+        /// Performs the previously chained Try action and swallow only the specified Exception(s).
+        /// </summary>
+        /// <typeparam name="TException1"></typeparam>
+        /// <typeparam name="TException2"></typeparam>
+        /// <typeparam name="TException3"></typeparam>
+        /// <typeparam name="TException4"></typeparam>
+        /// <returns></returns>
+        IAction ITriableAction.SwallowIf<TException1, TException2, TException3, TException4>()
+        {
+            try
+            {
+                Action();
+            }
+            catch (TException1)
+            {
+            }
+            catch (TException2)
+            {
+            }
+            catch (TException3)
+            {
+            }
+            catch (TException4)
+            {
+            }
+            return this;
+        }
+
+        /// <summary>
+        /// Performs the previously chained Try action and catches any exception and performs the specified action for the catch.
+        /// </summary>
+        /// <param name="action"></param>
+        /// <returns></returns>
+        IAction ITriableAction.Catch(Action<Exception> action)
+        {
+            try
+            {
+                Action();
+            }
+            catch (Exception exception)
+            {
+                action(exception);
+            }
+            return this;
+        }
+
+        /// <summary>
+        /// Performs the previously chained Try action and catches the specified exception(s) and performs the specified action for each catch.
+        /// </summary>
+        /// <typeparam name="TException1"></typeparam>
+        /// <param name="action1"></param>
+        /// <returns></returns>
+        IAction ITriableAction.Catch<TException1>(Action<TException1> action1)
+        {
+            try
+            {
+                Action();
+            }
+            catch (TException1 exception)
+            {
+                action1(exception);
+            }
+            return this;
+        }
+
+        /// <summary>
+        /// Performs the previously chained Try action and catches the specified exception(s) and performs the specified action for each catch.
+        /// </summary>
+        /// <typeparam name="TException1"></typeparam>
+        /// <typeparam name="TException2"></typeparam>
+        /// <param name="action1"></param>
+        /// <param name="action2"></param>
+        /// <returns></returns>
+        IAction ITriableAction.Catch<TException1, TException2>(Action<TException1> action1, Action<TException2> action2)
+        {
+            try
+            {
+                Action();
+            }
+            catch (TException1 exception)
+            {
+                action1(exception);
+            }
+            catch (TException2 exception)
+            {
+                action2(exception);
+            }
             return this;
         }
 

@@ -1,4 +1,5 @@
-﻿using Fluentx;
+﻿using System;
+using Fluentx;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Fluentx.Tests
@@ -334,6 +335,120 @@ namespace Fluentx.Tests
                 });
 
             Assert.AreEqual(condition_evaluation_count, 100);
+        }
+
+        [TestMethod]
+        public void TrySwallowTest()
+        {
+            var result = 0;
+            Flux.Try(() =>
+            {
+                throw new NotImplementedException();
+                ++result;
+            }).Swallow();
+            Assert.AreEqual(0, result);
+        }
+
+        [TestMethod]
+        public void TrySwallowIfTest()
+        {
+            int result = 0;
+            Flux.Try(() =>
+            {
+                throw new NotImplementedException();
+                ++result;
+            }).SwallowIf<NotImplementedException>();
+
+            Assert.AreEqual(result, 0);
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(NotImplementedException))]
+        public void TrySwallowIfUnmatchedTest()
+        {
+            int result = 0;
+            Flux.Try(() =>
+            {
+                throw new NotImplementedException();
+                ++result;
+            }).SwallowIf<NullReferenceException>();
+
+            Assert.AreEqual(result, 0);
+        }
+
+        [TestMethod]
+        public void TrySwallowIfTest2()
+        {
+            int result = 0;
+            Flux.Try(() =>
+            {
+                throw new NullReferenceException();
+                ++result;
+            }).SwallowIf<NullReferenceException, ArgumentException>();
+            Assert.AreEqual(result, 0);
+        }
+
+        [TestMethod]
+        public void TrySwallowIfTest3()
+        {
+            int result = 0;
+            Flux.Try(() =>
+            {
+                throw new ArithmeticException();
+                ++result;
+            }).SwallowIf<NullReferenceException, OutOfMemoryException, ArithmeticException>();
+            Assert.AreEqual(result, 0);
+        }
+
+        [TestMethod]
+        public void TrySwallowIfTest4()
+        {
+            int result = 0;
+            Flux.Try(() =>
+            {
+                throw new ArithmeticException();
+                ++result;
+            }).SwallowIf<NullReferenceException, OutOfMemoryException, ArithmeticException, IndexOutOfRangeException>();
+            Assert.AreEqual(result, 0);
+        }
+
+        [TestMethod]
+        public void TryCatchTest()
+        {
+            var result = 0;
+            Flux.Try(() =>
+            {
+                throw new NotImplementedException();
+                result = 10;
+            }).Catch(exception => { result = 20; });
+            Assert.AreEqual(20, result);
+        }
+
+        [TestMethod]
+        public void TryCatchNoExceptionTest()
+        {
+            bool exception_occured = false;
+            Flux.Try(() => { }).Catch<Exception>(ex => { exception_occured = true; });
+            Assert.IsFalse(exception_occured);
+        }
+
+        [TestMethod]
+        public void TryCatchExcutedTest()
+        {
+            bool exception_occured = false;
+            Flux.Try(() => { throw new NotImplementedException(); })
+                .Catch<NotImplementedException>(ex => { exception_occured = true; });
+            Assert.IsTrue(exception_occured);
+        }
+
+        [TestMethod]
+        public void Test_Try_4_Catch_CatchExcuted_ByCorrectOrder()
+        {
+            bool exception_occured = false;
+            Flux.Try(() => { throw new NotImplementedException(); })
+                .Catch<NotImplementedException, Exception>(ex1 => { exception_occured = true; }, ex2 => { });// catch more than one
+
+            Assert.IsTrue(exception_occured);
         }
     }
 }
