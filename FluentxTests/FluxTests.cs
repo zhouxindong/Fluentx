@@ -1,5 +1,4 @@
 ﻿using System;
-using Fluentx;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Fluentx.Tests
@@ -449,6 +448,38 @@ namespace Fluentx.Tests
                 .Catch<NotImplementedException, Exception>(ex1 => { exception_occured = true; }, ex2 => { });// catch more than one
 
             Assert.IsTrue(exception_occured);
+        }
+
+        [TestMethod]
+        public void SwitchCaseDefaultTest()
+        {
+            var nationality = "China";
+            var salary = 0.0;
+            Flux.Switch(nationality)
+                .Case("USA").Execute(() => salary = 1000.0)
+                .Case("China").Execute(() => salary = 2000.0)
+                .Default(() => salary = 100.0);
+            Assert.AreEqual(2000.0, salary);
+        }
+
+        [TestMethod]
+        public void SwitchTypeTest()
+        {
+            var result = 0;
+            Flux.Switch("Fluentx".GetType())
+                .Case<int>().Execute(() =>
+                {
+                    result = 1;
+                })
+                .Case<double>().Execute(() =>
+                {
+                    result = 2;
+                })
+                .Default(() =>
+                {
+                    result = 99;
+                });
+            Assert.AreEqual(99, result);
         }
     }
 }

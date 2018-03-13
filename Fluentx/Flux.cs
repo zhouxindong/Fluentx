@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Fluentx
 {
@@ -6,7 +8,7 @@ namespace Fluentx
     /// Flux is the main class for Fluentx and its a shortened name for Fluentx
     /// </summary>
     public class Flux : IConditionBuilder, IConditionalAction, ILoopAction, IEarlyLoop, IEarlyLoopBuilder, ILateLoop,
-        ILateLoopBuilder, ITriableAction
+        ILateLoopBuilder, ITriableAction, ISwitchBuilder, ISwitchCaseBuilder, ISwitchTypeBuilder, ISwitchTypeCaseBuilder
     {
         #region Flux.class
 
@@ -39,6 +41,23 @@ namespace Fluentx
         /// Used for a single default action
         /// </summary>
         private Action Action { get; set; }
+
+        /// <summary>
+        /// Private class to hold information about switch case statement.
+        /// </summary>
+        private class CaseInfo
+        {
+            public object Operand { get; private set; }
+            public Action Action { get; set; }
+            public CaseInfo(object operand, Action action, bool is_default = false)
+            {
+                Operand = operand;
+                Action = action;
+            }
+        }
+
+        private object SwitchMainOperand { get; set; }
+        private List<CaseInfo> SwitchCases { get; set; }
 
         #endregion
 
@@ -575,7 +594,7 @@ namespace Fluentx
         /// <returns></returns>
         public static ITriableAction Try(Action action)
         {
-            var instance = new Flux { Action = action };
+            var instance = new Flux {Action = action};
             return instance;
         }
 
@@ -746,6 +765,145 @@ namespace Fluentx
             {
                 action2(exception);
             }
+            return this;
+        }
+
+        #endregion
+
+        #region switch
+
+        /// <summary>
+        /// Prepares for a switch statement over the specified mainOperand, this requires the call to Default eventually.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="main_operand"></param>
+        /// <returns></returns>
+        public static ISwitchBuilder Switch<T>(T main_operand)
+        {
+            var instance = new Flux
+            {
+                SwitchCases = new List<CaseInfo>(),
+                SwitchMainOperand = main_operand
+            };
+            return instance;
+        }
+
+        /// <summary>
+        /// Prepares a Case statement for the previously chained Switch statement, this requires the usage of Execute after it.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="compare_operand"></param>
+        /// <returns></returns>
+        ISwitchCaseBuilder ISwitchBuilder.Case<T>(T compare_operand)
+        {
+            SwitchCases.Add(new CaseInfo(compare_operand, null));
+            return this;
+        }
+
+        /// <summary>
+        /// Performs the previously chained switch statement along with its chained cases.
+        /// </summary>
+        /// <param name="action"></param>
+        /// <returns></returns>
+        IAction ISwitchBuilder.Default(Action action)
+        {
+            var excute_default = true;
+            foreach (var switch_case in SwitchCases)
+            {
+                if (Equals(SwitchMainOperand, switch_case.Operand))
+                {
+                    switch_case.Action();
+                    excute_default = false;
+                    break;
+                }
+            }
+            if (excute_default)
+                action();
+            return this;
+        }
+
+        /// <summary>
+        /// Prepares for the execution of the specified action in case its chained Case has been evaluated.
+        /// </summary>
+        /// <param name="action"></param>
+        /// <returns></returns>
+        ISwitchBuilder ISwitchCaseBuilder.Execute(Action action)
+        {
+            SwitchCases.Last().Action = action;
+            return this;
+        }
+
+        /// <summary>
+        /// Prepares for a switch statement over the specified type, this requires the call to Default eventually.
+        /// </summary>
+        /// <param name="type"></param>
+        /// <returns></returns>
+        public static ISwitchTypeBuilder Switch(Type type)
+        {
+            var instance = new Flux
+            {
+                SwitchCases = new List<CaseInfo>(),
+                SwitchMainOperand = type
+            };
+            return instance;
+        }
+
+        /// <summary>
+        /// Prepares for a switch statement over the specified type T, this requires the call to Default eventually.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        public static ISwitchTypeBuilder Switch<T>()
+        {
+            var instance = new Flux
+            {
+                SwitchCases = new List<CaseInfo>(),
+                SwitchMainOperand = typeof(T)
+            };
+            return instance;
+        }
+
+        /// <summary>
+        /// Prepares a Case statement for the previously chained Switch statement, this requires the usage of Execute after it.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        ISwitchTypeCaseBuilder ISwitchTypeBuilder.Case<T>()
+        {
+            SwitchCases.Add(new CaseInfo(typeof(T), null));
+            return this;
+        }
+
+        /// <summary>
+        /// Performs the previously chained switch statement along with its chained cases.
+        /// </summary>
+        /// <param name="action"></param>
+        /// <returns></returns>
+        IAction ISwitchTypeBuilder.Default(Action action)
+        {
+            var execute_default = true;
+            foreach (var switch_case in SwitchCases)
+            {
+                if (Equals(SwitchMainOperand, switch_case.Operand))
+                {
+                    switch_case.Action();
+                    execute_default = false;
+                    break;
+                }
+            }
+            if (execute_default)
+                action();
+            return this;
+        }
+
+        /// <summary>
+        /// Prepares for the execution of the specified action in case its chained Case has been evaluated.
+        /// </summary>
+        /// <param name="action"></param>
+        /// <returns></returns>
+        ISwitchTypeBuilder ISwitchTypeCaseBuilder.Execute(Action action)
+        {
+            SwitchCases.Last().Action = action;
             return this;
         }
 
